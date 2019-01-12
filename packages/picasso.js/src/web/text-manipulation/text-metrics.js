@@ -6,34 +6,75 @@ import {
   ELLIPSIS_CHAR
 } from './text-const';
 
-let heightMeasureCache = {},
-  widthMeasureCache = {},
-  canvasCache;
+function memoize(func, opts = {}) {
+  const {
+    size = 5000,
+    multipleArguments = false,
+    toKey = arg => arg
+  } = opts;
+  let cache = Object.create(null);
+  let index = Object.create(null);
+  let counter = 0;
+  let fifo = 0; // First-In-First-Out index
+  let cacher;
+  let k;
 
-function measureTextWidth({ text, fontSize, fontFamily }) {
-  const match = widthMeasureCache[text + fontSize + fontFamily];
-  if (match !== undefined) {
-    return match;
+  if (multipleArguments) {
+    cacher = (...args) => {
+      k = toKey(...args);
+      if (cacher.has(k)) {
+        return cacher.get(k);
+      }
+      return cacher.set(k, func(...args));
+    };
+  } else {
+    cacher = (arg) => {
+      k = toKey(arg);
+      if (cacher.has(k)) {
+        return cacher.get(k);
+      }
+      return cacher.set(k, func(arg));
+    };
   }
+
+  cacher.set = (key, val) => {
+    if (counter >= size) {
+      delete cache[index[fifo]];
+      delete index[fifo];
+      counter--;
+      fifo++;
+    }
+    cache[key] = val;
+    index[counter] = key;
+    counter++;
+    return val;
+  };
+
+  cacher.get = key => cache[key];
+
+  cacher.has = key => key in cache;
+
+  cacher.clear = () => {
+    cache = Object.create(null);
+    index = Object.create(null);
+    counter = 0;
+    fifo = 0;
+  };
+
+  cacher.size = () => counter;
+
+  return cacher;
+}
+
+let canvasCache;
+
+const measureTextWidth = memoize((text, fontSize, fontFamily) => {
   canvasCache = canvasCache || document.createElement('canvas');
   const g = canvasCache.getContext('2d');
   g.font = `${fontSize} ${fontFamily}`;
   const w = g.measureText(text).width;
-  widthMeasureCache[text + fontSize + fontFamily] = w;
   return w;
-}
-
-function measureTextHeight({ fontSize, fontFamily }) {
-  const match = heightMeasureCache[fontSize + fontFamily];
-
-  if (match !== undefined) {
-    return match;
-  }
-  const text = 'M';
-  const height = measureTextWidth({ text, fontSize, fontFamily }) * 1.2;
-  heightMeasureCache[fontSize + fontFamily] = height;
-  return height;
-}
+}, { toKey: (...args) => JSON.stringify(args), multipleArguments: true });
 
 /**
  * @private
@@ -49,11 +90,16 @@ function measureTextHeight({ fontSize, fontFamily }) {
  *  fontFamily: 'Arial'
  * }); // returns { width: 20, height: 12 }
  */
-export function measureText({ text, fontSize, fontFamily }) { // eslint-disable-line import/prefer-default-export
-  const w = measureTextWidth({ text, fontSize, fontFamily });
-  const h = measureTextHeight({ fontSize, fontFamily });
-  return { width: w, height: h };
-}
+export const measureText = memoize((opts) => { // eslint-disable-line import/prefer-default-export
+  // if (opts.text.length > 'somelength') // do not measure each char
+  const chars = Array.from(opts.text); // https://stackoverflow.com/a/38901550
+  let width = 0;
+  for (let i = 0, len = chars.length; i < len; i++) {
+    width += measureTextWidth(chars[i], opts.fontSize, opts.fontFamily);
+  }
+  const height = measureTextWidth('M', opts.fontSize, opts.fontFamily) * 1.2;
+  return { width, height };
+}, { toKey: opts => `${opts.text}${opts.fontSize}${opts.fontFamily}` });
 
 /**
  * Calculates the bounding rectangle of a text node.

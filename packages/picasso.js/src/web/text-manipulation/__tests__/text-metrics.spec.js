@@ -1,6 +1,6 @@
 import { measureText, textBounds } from '..';
 
-describe('text-metrics', () => {
+describe.only('text-metrics', () => {
   describe('measureText', () => {
     let sandbox,
       canvasContextMock,
@@ -49,7 +49,7 @@ describe('text-metrics', () => {
 
       const result = measureText(argument);
 
-      expect(result).to.deep.equal({ width: 150, height: 180 });
+      expect(result).to.deep.equal({ width: 600, height: 180 });
     });
 
     it('should set the correct font before firing measureText', () => {
@@ -66,8 +66,11 @@ describe('text-metrics', () => {
 
       measureText(argument);
 
-      expect(canvasContextMock.measureText.calledTwice).to.equal(true);
-      expect(canvasContextMock.measureText.calledWith('Test')).to.equal(true);
+      expect(canvasContextMock.measureText.callCount).to.equal(5);
+      expect(canvasContextMock.measureText.calledWith('T')).to.equal(true);
+      expect(canvasContextMock.measureText.calledWith('e')).to.equal(true);
+      expect(canvasContextMock.measureText.calledWith('s')).to.equal(true);
+      expect(canvasContextMock.measureText.calledWith('t')).to.equal(true);
       expect(canvasContextMock.measureText.calledWith('M')).to.equal(true);
     });
 
