@@ -92,7 +92,7 @@ const measureTextWidth = memoize((text, fontSize, fontFamily) => {
  */
 export const measureText = memoize((opts) => { // eslint-disable-line import/prefer-default-export
   // if (opts.text.length > 'somelength') // do not measure each char
-  const chars = Array.from(opts.text); // https://stackoverflow.com/a/38901550
+  const chars = Array.from(opts.text); // https://stackoverflow.com/a/38901550 or for (char of string)
   let width = 0;
   for (let i = 0, len = chars.length; i < len; i++) {
     width += measureTextWidth(chars[i], opts.fontSize, opts.fontFamily);
@@ -166,7 +166,7 @@ function calcTextBounds(attrs, measureFn = measureText) {
  * @param {function} [measureFn] - Optional text measure function
  * @return {object} The bounding rectangle
  */
-export function textBounds(node, measureFn = measureText) {
+export const textBounds = memoize((node, measureFn = measureText) => {
   const lineBreakFn = resolveLineBreakAlgorithm(node);
   if (lineBreakFn) {
     const fontSize = node['font-size'] || node.fontSize;
@@ -195,4 +195,4 @@ export function textBounds(node, measureFn = measureText) {
   }
 
   return calcTextBounds(node, measureFn);
-}
+}, { toKey: node => JSON.stringify(node) });
