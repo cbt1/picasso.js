@@ -61,7 +61,7 @@ describe.only('text-metrics', () => {
       expect(fontWasUnset).to.equal(false);
     });
 
-    it('should fire measureText twice with correct arguments', () => {
+    it('should fire measureText with correct arguments', () => {
       argument.fontSize = ++cacheId;
 
       measureText(argument);
@@ -88,58 +88,6 @@ describe.only('text-metrics', () => {
       const postCallCount = global.document.createElement.callCount;
 
       expect(preCallCount).to.equal(postCallCount);
-    });
-
-    it('should reuse past width calculations if arguments match previous use case', () => {
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('Test').calledOnce).to.equal(true);
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('Test').calledOnce).to.equal(true);
-    });
-
-    it('should not reuse past width calculations if arguments does not match previous use case', () => {
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('Test').calledOnce).to.equal(true);
-
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('Test').calledTwice).to.equal(true);
-    });
-
-    it('should reuse past height calculations if arguments match previous use case', () => {
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('M').calledOnce).to.equal(true);
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('M').calledOnce).to.equal(true);
-    });
-
-    it('should not reuse past height calculations if arguments does not match previous use case', () => {
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('M').calledOnce).to.equal(true);
-
-      argument.fontSize = ++cacheId;
-
-      measureText(argument);
-
-      expect(canvasContextMock.measureText.withArgs('M').calledTwice).to.equal(true);
     });
   });
 

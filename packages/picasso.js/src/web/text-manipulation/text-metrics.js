@@ -66,15 +66,12 @@ function memoize(func, opts = {}) {
   return cacher;
 }
 
-let canvasCache;
-
-const measureTextWidth = memoize((text, fontSize, fontFamily) => {
-  canvasCache = canvasCache || document.createElement('canvas');
-  const g = canvasCache.getContext('2d');
-  g.font = `${fontSize} ${fontFamily}`;
-  const w = g.measureText(text).width;
+const canvasCtx = document.createElement('canvas').getContext('2d');
+const measureTextWidth = memoize((opts) => {
+  canvasCtx.font = `${opts.fontSize} ${opts.fontFamily}`;
+  const w = canvasCtx.measureText(opts.text).width;
   return w;
-}, { toKey: (...args) => JSON.stringify(args), multipleArguments: true });
+}, { toKey: opts => `${opts.text},${opts.fontSize},${opts.fontFamily}` });
 
 /**
  * @private
@@ -90,16 +87,11 @@ const measureTextWidth = memoize((text, fontSize, fontFamily) => {
  *  fontFamily: 'Arial'
  * }); // returns { width: 20, height: 12 }
  */
-export const measureText = memoize((opts) => { // eslint-disable-line import/prefer-default-export
-  // if (opts.text.length > 'somelength') // do not measure each char
-  const chars = Array.from(opts.text); // https://stackoverflow.com/a/38901550 or for (char of string)
-  let width = 0;
-  for (let i = 0, len = chars.length; i < len; i++) {
-    width += measureTextWidth(chars[i], opts.fontSize, opts.fontFamily);
-  }
-  const height = measureTextWidth('M', opts.fontSize, opts.fontFamily) * 1.2;
+export const measureText = memoize((opts) => {
+  const width = measureTextWidth(opts);
+  const height = measureTextWidth({ text: 'M', fontSize: opts.fontSize, fontFamily: opts.fontFamily }) * 1.2;
   return { width, height };
-}, { toKey: opts => `${opts.text}${opts.fontSize}${opts.fontFamily}` });
+}, { toKey: opts => `${opts.text},${opts.fontSize},${opts.fontFamily}` });
 
 /**
  * Calculates the bounding rectangle of a text node.
@@ -166,7 +158,7 @@ function calcTextBounds(attrs, measureFn = measureText) {
  * @param {function} [measureFn] - Optional text measure function
  * @return {object} The bounding rectangle
  */
-export const textBounds = memoize((node, measureFn = measureText) => {
+export const textBounds = (node, measureFn = measureText) => {
   const lineBreakFn = resolveLineBreakAlgorithm(node);
   if (lineBreakFn) {
     const fontSize = node['font-size'] || node.fontSize;
@@ -195,4 +187,4 @@ export const textBounds = memoize((node, measureFn = measureText) => {
   }
 
   return calcTextBounds(node, measureFn);
-}, { toKey: node => JSON.stringify(node) });
+};
